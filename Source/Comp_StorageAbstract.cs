@@ -100,7 +100,7 @@ namespace RT_Storage
 					Verse.AI.PathEndMode.OnCell,
 					TraverseParms.For(TraverseMode.NoPassClosedDoors, Danger.Deadly, false),
 					9999.0f,
-					null,
+					thing => linkedOutputParents.Contains(thing),
 					linkedOutputParents);
 				cachedOutputParent = closestThing;
 			}
