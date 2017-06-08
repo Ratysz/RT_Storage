@@ -37,14 +37,14 @@ namespace RT_Storage
 			return null;
 		}
 
-		public static List<IntVec3> GetExtraCells(this SlotGroup slotGroup)
+		public static List<IntVec3> GetStorageInputCells(this SlotGroup slotGroup)
 		{
-			return slotGroup.parent.Map.GetStorageCoordinator().GetExtraCells(slotGroup);
+			return slotGroup.parent.Map.GetStorageCoordinator().GetStorageInputCells(slotGroup);
 		}
 
-		public static bool HasStorageInputs(this SlotGroup slotGroup)
+		public static bool HasStorageInputCells(this SlotGroup slotGroup)
 		{
-			return slotGroup.parent.Map.GetStorageCoordinator().HasStorageInputs(slotGroup);
+			return slotGroup.parent.Map.GetStorageCoordinator().HasStorageInputCells(slotGroup);
 		}
 	}
 }

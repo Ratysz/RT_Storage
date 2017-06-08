@@ -70,7 +70,7 @@ namespace RT_Storage
 
 		static List<IntVec3> PresortCells(List<IntVec3> cells, Map map, SlotGroup slotGroup)
 		{
-			List<IntVec3> extraCells = slotGroup.GetExtraCells();
+			List<IntVec3> extraCells = slotGroup.GetStorageInputCells();
 			if (extraCells != null)
 			{
 				List<IntVec3> copyCells = new List<IntVec3>(cells);
