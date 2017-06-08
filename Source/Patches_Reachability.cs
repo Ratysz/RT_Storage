@@ -99,8 +99,8 @@ namespace RT_Storage
 		}
 	}*/
 
-	/*[HarmonyPatch]
-	static class Patch_TryFindBestBillIngredients_BaseValidator
+	[HarmonyPatch]
+	static class Patch_TFBBI_BaseValidator
 	{
 		static MethodBase TargetMethod()
 		{
@@ -116,17 +116,33 @@ namespace RT_Storage
 
 		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
 		{
-			return instructions.MethodReplacer(
-				AccessTools.Property(typeof(Thing), nameof(Thing.Position)).GetGetMethod(),
-				AccessTools.Method(
-					typeof(Patch_TryFindBestBillIngredients_BaseValidator),
-					nameof(Patch_TryFindBestBillIngredients_BaseValidator.GetPositionModified)));
+			MethodInfo markerMethod = AccessTools.Property(typeof(Thing), nameof(Thing.Position)).GetGetMethod();
+			MethodInfo sneakyMethod = AccessTools.Method(
+				typeof(Patch_TFBBI_BaseValidator),
+				nameof(Patch_TFBBI_BaseValidator.ClosestOutputOrPosition));
+			bool patched = false;
+			var instrList = instructions.ToList();
+			for (int i = 0; i < instrList.Count; i++)
+			{
+				if (!patched
+					&& instrList[i].opcode == OpCodes.Callvirt
+					&& instrList[i].operand == markerMethod)
+				{
+					patched = true;
+					yield return new CodeInstruction(OpCodes.Ldarg_0);
+					yield return new CodeInstruction(OpCodes.Ldfld, instrList[i + 2].operand);
+					yield return new CodeInstruction(OpCodes.Call, sneakyMethod);
+				}
+				else
+				{
+					yield return instrList[i];
+				}
+			}
 		}
 
-		static IntVec3 GetPositionModified(Thing instance)
+		static IntVec3 ClosestOutputOrPosition(Thing thing, Thing otherThing)
 		{
-			Utility.Debug("Aw fuck yeah!");
-			return instance.Position;
+			return Patch_TFBBI_RegProc_Comparison.ClosestOutputOrPosition(thing, otherThing.InteractionCell);
 		}
 	}
 
@@ -147,32 +163,37 @@ namespace RT_Storage
 			MethodInfo markerMethod = AccessTools.Property(typeof(Thing), nameof(Thing.Position)).GetGetMethod();
 			MethodInfo sneakyMethod = AccessTools.Method(
 				typeof(Patch_TFBBI_RegProc_Comparison),
-				nameof(Patch_TFBBI_RegProc_Comparison.FindClosestOutput));
+				nameof(Patch_TFBBI_RegProc_Comparison.ClosestOutputOrPosition));
 			var instrList = instructions.ToList();
 			for (int i = 0; i < instrList.Count; i++)
 			{
 				if (instrList[i].opcode == OpCodes.Callvirt
 					&& instrList[i].operand == markerMethod)
 				{
-					Utility.Debug("");
-					yield return new Utility.CodeInstruction(OpCodes.Ldarg_0);
-					yield return new Utility.CodeInstruction(OpCodes.Ldfld, instrList[i + 2].operand);
-					yield return new Utility.CodeInstruction(OpCodes.Call, sneakyMethod);
-					Utility.Debug("");
+					yield return new CodeInstruction(OpCodes.Ldarg_0);
+					yield return new CodeInstruction(OpCodes.Ldfld, instrList[i + 2].operand);
+					yield return new CodeInstruction(OpCodes.Call, sneakyMethod);
 				}
 				else
 				{
-					Utility.PrintInstruction(instrList[i]);
 					yield return instrList[i];
 				}
 			}
 		}
 
-		static IntVec3 FindClosestOutput(Thing thing, IntVec3 rootCell)
+		public static IntVec3 ClosestOutputOrPosition(Thing thing, IntVec3 rootCell)
 		{
-			Utility.Debug($"Finding closest input : {thing} : {rootCell}");
 			var cell = thing.Map.GetStorageCoordinator().FindClosestOutput(thing, rootCell);
-			return cell == null ? thing.Position : cell;
+			if (cell != IntVec3.Invalid)
+			{
+				int distanceToOutput = (cell - rootCell).LengthHorizontalSquared;
+				int distanceToThing = (thing.Position - rootCell).LengthHorizontalSquared;
+				if (distanceToOutput < distanceToThing)
+				{
+					return cell;
+				}
+			}
+			return thing.Position;
 		}
-	}*/
+	}
 }

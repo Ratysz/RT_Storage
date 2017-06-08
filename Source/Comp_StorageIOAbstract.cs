@@ -19,7 +19,7 @@ namespace RT_Storage
 				return (CompProperties_StorageIOAbstract)props;
 			}
 		}
-		public Comp_StorageAbstract linkedStorage = null;
+		protected Comp_StorageAbstract linkedStorage = null;
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
@@ -36,6 +36,18 @@ namespace RT_Storage
 				linkedStorage = parent.Map.GetStorageCoordinator().DebugGetAnyStorage();
 				Utility.Debug($"{this} connected to {linkedStorage} in {GetSlotGroup()}");
 			}
+			linkedStorage?.Notify_IOAdded(this);
+		}
+
+		public override void PostDeSpawn(Map map)
+		{
+			base.PostDeSpawn(map);
+			linkedStorage?.Notify_IORemoved(this);
+		}
+
+		public void Notify_StorageRemoved()
+		{
+			linkedStorage = null;
 		}
 
 		public SlotGroup GetSlotGroup()

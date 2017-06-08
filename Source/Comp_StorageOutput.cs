@@ -19,25 +19,5 @@ namespace RT_Storage
 				return (CompProperties_StorageOutput)props;
 			}
 		}
-
-		public override void PostSpawnSetup(bool respawningAfterLoad)
-		{
-			base.PostSpawnSetup(respawningAfterLoad);
-			if (linkedStorage != null)
-			{
-				linkedStorage.linkedOutputs.Add(this);
-				linkedStorage.linkedOutputParents.Add(parent);
-			}
-		}
-
-		public override void PostDeSpawn(Map map)
-		{
-			base.PostDeSpawn(map);
-			if (linkedStorage != null)
-			{
-				linkedStorage.linkedOutputs.Remove(this);
-				linkedStorage.linkedOutputParents.Remove(parent);
-			}
-		}
 	}
 }

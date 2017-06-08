@@ -21,7 +21,8 @@ namespace RT_Storage
 
 		}
 
-		public void RegisterComponent(ThingComp component)
+		#region Notify
+		public void Notify_ComponentSpawned(ThingComp component)
 		{
 			IntVec3 cell = component.parent.Position;
 			Type type = component.GetType();
@@ -55,6 +56,7 @@ namespace RT_Storage
 				}
 				outputsInCell.Add((Comp_StorageOutput)component);
 				outputs.Add((Comp_StorageOutput)component);
+				previousRootCell = IntVec3.Invalid;
 			}
 			else if (typeof(Comp_StorageAbstract).IsAssignableFrom(type))
 			{
@@ -69,7 +71,7 @@ namespace RT_Storage
 			compsInCell.Add((Comp_CoordinatedAbstract)component);
 		}
 
-		public void DeregisterComponent(ThingComp component)
+		public void Notify_ComponentDespawned(ThingComp component)
 		{
 			Type type = component.GetType();
 			IntVec3 cell = component.parent.Position;
@@ -102,6 +104,7 @@ namespace RT_Storage
 					map_cell_outputs.Remove(cell);
 				}
 				outputs.Remove((Comp_StorageOutput)component);
+				previousRootCell = IntVec3.Invalid;
 			}
 			else if (typeof(Comp_StorageAbstract).IsAssignableFrom(type))
 			{
@@ -138,6 +141,33 @@ namespace RT_Storage
 		{
 			map_slotGroup_inputCells.Remove(slotGroup);
 		}
+		#endregion
+
+		private IntVec3 cachedOutputCell = IntVec3.Invalid;
+		private IntVec3 previousRootCell = IntVec3.Invalid;
+		private IntVec3 previousStorageCell = IntVec3.Invalid;
+		public IntVec3 FindClosestOutput(Thing thing, IntVec3 rootCell)
+		{
+			if (rootCell != previousRootCell || previousStorageCell != thing.Position)
+			{
+				previousRootCell = rootCell;
+				previousStorageCell = thing.Position;
+				var comp = previousStorageCell.GetStorageComponent<Comp_StorageAbstract>(map);
+				if (comp != null)
+				{
+					Thing closestThing = comp.FindClosestOutputParent(previousRootCell);
+					if (closestThing != null)
+					{
+						cachedOutputCell = closestThing.Position;
+					}
+				}
+				else
+				{
+					cachedOutputCell = IntVec3.Invalid;
+				}
+			}
+			return cachedOutputCell;
+		}
 
 		public bool HasStorageInputCells(SlotGroup slotGroup)
 		{
@@ -162,47 +192,6 @@ namespace RT_Storage
 				return values;
 			}
 			return null;
-		}
-
-		private IntVec3 cachedCell = IntVec3.Invalid;
-		private IntVec3 previousCell = IntVec3.Invalid;
-		public IntVec3 FindClosestOutput(Thing thing, IntVec3 rootCell)
-		{
-			if (rootCell != previousCell)
-			{
-				previousCell = rootCell;
-				var closestThing = GenClosest.ClosestThingReachable(
-					rootCell,
-					map,
-					ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial),
-					Verse.AI.PathEndMode.Touch,
-					TraverseParms.For(TraverseMode.NoPassClosedDoors, Danger.Deadly, false),
-					9999.0f,
-					t => {
-						List<Comp_CoordinatedAbstract> compsInCell;
-						if (map_cell_comps.TryGetValue(thing.Position, out compsInCell))
-						{
-							foreach (var comp in compsInCell)
-							{
-								var storageComp = comp as Comp_StorageAbstract;
-								if (storageComp != null)
-								{
-									return storageComp.linkedOutputParents.Contains(t);
-								}
-							}
-						}
-						return false;
-					});
-				if (closestThing != null)
-				{
-					cachedCell = closestThing.Position;
-				}
-				else
-				{
-					cachedCell = IntVec3.Invalid;
-				}
-			}
-			return cachedCell;
 		}
 
 		public override void MapComponentTick()

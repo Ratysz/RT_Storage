@@ -20,12 +20,12 @@ namespace RT_Storage
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
 			base.PostSpawnSetup(respawningAfterLoad);
-			parent.Map.GetStorageCoordinator().RegisterComponent(this);
+			parent.Map.GetStorageCoordinator().Notify_ComponentSpawned(this);
 		}
 
 		public override void PostDeSpawn(Map map)
 		{
-			map.GetStorageCoordinator().DeregisterComponent(this);
+			map.GetStorageCoordinator().Notify_ComponentDespawned(this);
 			base.PostDeSpawn(map);
 		}
 	}
