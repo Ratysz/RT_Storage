@@ -51,7 +51,7 @@ namespace RT_Storage
 			{
 				linkedOutputs.Add((Comp_StorageOutput)io);
 				linkedOutputParents.Add(io.parent);
-				previousRootCell = IntVec3.Invalid;
+				previousRootCellOut = IntVec3.Invalid;
 			}
 		}
 
@@ -66,7 +66,7 @@ namespace RT_Storage
 			{
 				linkedOutputs.Remove((Comp_StorageOutput)io);
 				linkedOutputParents.Remove(io.parent);
-				previousRootCell = IntVec3.Invalid;
+				previousRootCellOut = IntVec3.Invalid;
 			}
 		}
 
@@ -87,12 +87,12 @@ namespace RT_Storage
 		}
 
 		protected Thing cachedOutputParent = null;
-		protected IntVec3 previousRootCell = IntVec3.Invalid;
+		protected IntVec3 previousRootCellOut = IntVec3.Invalid;
 		virtual public Thing FindClosestOutputParent(IntVec3 rootCell)
 		{
-			if (rootCell != previousRootCell)
+			if (rootCell != previousRootCellOut)
 			{
-				previousRootCell = rootCell;
+				previousRootCellOut = rootCell;
 				Thing closestThing = GenClosest.ClosestThingReachable(
 					rootCell,
 					parent.Map,
@@ -105,6 +105,27 @@ namespace RT_Storage
 				cachedOutputParent = closestThing;
 			}
 			return cachedOutputParent;
+		}
+
+		protected Thing cachedInputParent = null;
+		protected IntVec3 previousRootCellIn = IntVec3.Invalid;
+		virtual public Thing FindClosestInputParent(IntVec3 rootCell)
+		{
+			if (rootCell != previousRootCellIn)
+			{
+				previousRootCellIn = rootCell;
+				Thing closestThing = GenClosest.ClosestThingReachable(
+					rootCell,
+					parent.Map,
+					ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial),
+					Verse.AI.PathEndMode.OnCell,
+					TraverseParms.For(TraverseMode.NoPassClosedDoors, Danger.Deadly, false),
+					9999.0f,
+					thing => linkedInputParents.Contains(thing),
+					linkedInputParents);
+				cachedInputParent = closestThing;
+			}
+			return cachedInputParent;
 		}
 	}
 }

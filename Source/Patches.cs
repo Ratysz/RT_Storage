@@ -104,12 +104,18 @@ namespace RT_Storage
 	[HarmonyPatch("IsGoodStoreCell")]
 	static class Patch_IsGoodStoreCell
 	{
-		static bool Prefix(ref bool __result, IntVec3 c, Map map, Thing t)
+		static bool Prefix(ref bool __result, IntVec3 c, Map map, Thing t, Pawn carrier, Faction faction)
 		{
 			Comp_StorageInput comp = c.GetStorageComponent<Comp_StorageInput>(map);
 			if (comp != null)
 			{
-				__result = comp.CanAccept(t) > 0;
+				__result = comp.CanAccept(t) > 0
+					&& (carrier == null
+					|| carrier.Map.reachability.CanReach(
+						(!t.SpawnedOrAnyParentSpawned) ? carrier.PositionHeld : t.PositionHeld,
+						c,
+						PathEndMode.ClosestTouch,
+						TraverseParms.For(carrier, Danger.Deadly, TraverseMode.ByPawn, false)));
 				return false;
 			}
 			return true;
@@ -129,73 +135,4 @@ namespace RT_Storage
 			}
 		}
 	}
-
-	/*[HarmonyPatch(typeof(StoreUtility))]
-	[HarmonyPatch("IsGoodStoreCell")]
-	static class Patch_IsGoodStoreCell
-	{
-		static IEnumerable<CodeInstruction> Transpiler(ILGenerator generator, IEnumerable<CodeInstruction> instructions)
-		{
-			MethodInfo markerMethod = AccessTools.Method(typeof(StoreUtility), "NoStorageBlockersIn");
-			MethodInfo sneakyMethod1 = AccessTools.Method(typeof(Patch_IsGoodStoreCell), "FetchInput");
-			MethodInfo sneakyMethod2 = AccessTools.Method(typeof(Patch_IsGoodStoreCell), "CheckIfAccepts");
-			LocalBuilder sneakyVar = generator.DeclareLocal(typeof(Comp_StorageInput));
-			Label sneakyLabel = generator.DefineLabel();
-			bool patched = false;
-			var instrList = instructions.ToList();
-			for (int i = 0; i < instrList.Count; i++)
-			{
-				yield return instrList[i];
-				if (!patched
-					&& instrList[i + 3].opcode == OpCodes.Call
-					&& instrList[i + 3].operand == markerMethod)
-				{
-					patched = true;
-					yield return new CodeInstruction(OpCodes.Ldarg_1);
-					yield return new CodeInstruction(OpCodes.Call, sneakyMethod1);
-					yield return new CodeInstruction(OpCodes.Stloc, sneakyVar);
-					yield return new CodeInstruction(OpCodes.Ldloc, sneakyVar);
-					yield return new CodeInstruction(OpCodes.Brfalse, sneakyLabel);
-					yield return new CodeInstruction(OpCodes.Ldloc, sneakyVar);
-					yield return new CodeInstruction(OpCodes.Ldarg_2);
-					yield return new CodeInstruction(OpCodes.Call, sneakyMethod2);
-					yield return new CodeInstruction(OpCodes.Brtrue, instrList[i + 4].operand);
-					var lastInstr = new CodeInstruction(OpCodes.Ldarg_0);
-					lastInstr.labels.Add(sneakyLabel);
-					yield return lastInstr;
-				}
-			}
-		}
-
-		static Comp_StorageInput FetchInput(IntVec3 cell, Map map)
-		{
-			Comp_StorageInput comp = cell.GetStorageComponent<Comp_StorageInput>(map);
-			if (comp != null && comp.linkedStorage != null)
-			{
-				return comp;
-			}
-			return null;
-		}
-
-		static bool CheckIfAccepts(Comp_StorageInput comp, Thing thing)
-		{
-			return comp.CanAccept(thing) > 0;
-		}
-	}*/
-
-	/*[HarmonyPatch(typeof(StoreUtility))]
-	[HarmonyPatch("NoStorageBlockersIn")]
-	static class Patch_NoStorageBlockersIn
-	{
-		static bool Prefix(ref bool __result, IntVec3 c, Map map, Thing thing)
-		{
-			Comp_StorageInput comp = c.GetStorageComponent<Comp_StorageInput>(map);
-			if (comp != null)
-			{
-				__result = comp.CanAccept(thing) > 0;
-				return false;
-			}
-			return true;
-		}
-	}*/
 }
