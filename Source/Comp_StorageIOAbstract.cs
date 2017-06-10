@@ -2,6 +2,7 @@
 using Harmony;
 using Verse;
 using RimWorld;
+using System.Collections.Generic;
 
 namespace RT_Storage
 {
@@ -57,6 +58,15 @@ namespace RT_Storage
 				return null;
 			}
 			return linkedStorage.parent.GetSlotGroup();
+		}
+
+		virtual public IEnumerable<Thing> GetStoredThings()
+		{
+			if (linkedStorage == null)
+			{
+				return null;
+			}
+			return linkedStorage.GetStoredThings();
 		}
 	}
 }

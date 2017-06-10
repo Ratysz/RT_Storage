@@ -46,12 +46,15 @@ namespace RT_Storage
 			{
 				linkedInputs.Add((Comp_StorageInput)io);
 				linkedInputParents.Add(io.parent);
+				previousRootCellIn = IntVec3.Invalid;
+				cachedInputParent = null;
 			}
 			else if (io.GetType().IsAssignableFrom(typeof(Comp_StorageOutput)))
 			{
 				linkedOutputs.Add((Comp_StorageOutput)io);
 				linkedOutputParents.Add(io.parent);
 				previousRootCellOut = IntVec3.Invalid;
+				cachedOutputParent = null;
 			}
 		}
 
@@ -61,12 +64,15 @@ namespace RT_Storage
 			{
 				linkedInputs.Remove((Comp_StorageInput)io);
 				linkedInputParents.Remove(io.parent);
+				previousRootCellIn = IntVec3.Invalid;
+				cachedInputParent = null;
 			}
 			else if (io.GetType().IsAssignableFrom(typeof(Comp_StorageOutput)))
 			{
 				linkedOutputs.Remove((Comp_StorageOutput)io);
 				linkedOutputParents.Remove(io.parent);
 				previousRootCellOut = IntVec3.Invalid;
+				cachedOutputParent = null;
 			}
 		}
 
@@ -84,6 +90,11 @@ namespace RT_Storage
 		{
 			resultingThing = null;
 			return false;
+		}
+
+		virtual public IEnumerable<Thing> GetStoredThings()
+		{
+			return null;
 		}
 
 		protected Thing cachedOutputParent = null;

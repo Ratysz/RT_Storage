@@ -146,7 +146,7 @@ namespace RT_Storage
 		private IntVec3 cachedOutputCell = IntVec3.Invalid;
 		private IntVec3 previousRootCell = IntVec3.Invalid;
 		private IntVec3 previousStorageCell = IntVec3.Invalid;
-		public IntVec3 FindClosestOutput(Thing thing, IntVec3 rootCell)
+		public IntVec3 FindClosestOutputCell(Thing thing, IntVec3 rootCell)
 		{
 			if (rootCell != previousRootCell || previousStorageCell != thing.Position)
 			{

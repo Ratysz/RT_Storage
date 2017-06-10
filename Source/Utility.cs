@@ -1,5 +1,6 @@
 ﻿using Verse;
 using Harmony;
+using System.Text;
 using System.Reflection.Emit;
 
 namespace RT_Storage
@@ -28,20 +29,27 @@ namespace RT_Storage
 
 		public static void PrintInstruction(CodeInstruction instr)
 		{
-			Debug($"INSTR : {instr.opcode,-10}\t : {instr.operand,-100}");
-			foreach (var label in instr.labels)
-			{
-				Debug($"LABEL : {instr.opcode,-10}\t : : : {label,-100}");
-			}
+			PrintInstruction((Harmony.CodeInstruction)instr);
 		}
 
 		public static void PrintInstruction(Harmony.CodeInstruction instr)
 		{
-			Debug($"INSTR : {instr.opcode,-10}\t : {instr.operand,-100}");
-			foreach (var label in instr.labels)
+			if (instr.labels.Count > 0)
 			{
-				Debug($"LABEL : {instr.opcode,-10}\t : : : {label,-100}");
+				var labels = instr.labels.ToArray();
+				StringBuilder builder = new StringBuilder();
+				builder.Append($"LABELS : : : > {labels[0].GetHashCode()}");
+				int index = 1;
+				while (index < instr.labels.Count)
+				{
+					builder.Append($", {labels[index].GetHashCode()}");
+					index++;
+				}
+				Debug(builder.ToString());
 			}
+			Debug($"INSTR : {instr.opcode,-10}\t : "
+				+ ((instr.operand != null && instr.operand.GetType() == typeof(Label))
+					? $": : > {instr.operand.GetHashCode(),-100}" : $"{instr.operand,-100}"));
 		}
 	}
 }

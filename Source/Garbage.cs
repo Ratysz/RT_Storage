@@ -205,4 +205,49 @@
 			return true;
 		}
 	}*/
+
+	/*[HarmonyPatch(typeof(Toils_Goto))]
+	[HarmonyPatch("GotoThing")]
+	[HarmonyPatch(new Type[] { typeof(TargetIndex), typeof(PathEndMode) })]
+	static class Patch_GotoThing
+	{
+		static void Postfix(ref Toil __result, TargetIndex ind)
+		{
+			Utility.Debug($"GT_Postfix {__result.actor} | {__result.actor.jobs.curJob}");
+		}
+	}*/
+
+	/*[HarmonyPatch]
+	static class Patch_MakeNewToils
+	{
+		static MethodBase TargetMethod()
+		{
+			return typeof(JobDriver_DoBill)
+				.GetNestedTypes(AccessTools.all)
+				.FirstOrDefault(type => type.FullName.Contains("MakeNewToils"))
+				.GetMethods(AccessTools.all)
+				.FirstOrDefault(method => method.ReturnType == typeof(JobCondition));
+		}
+
+		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+		{
+			bool skip = false;
+			foreach (var instr in instructions)
+			{
+				if (!skip)
+				{
+					Utility.PrintInstruction(instr);
+					yield return instr;
+				}
+				if (instr.opcode == OpCodes.Stloc_1)
+				{
+					skip = true;
+				}
+				else if (instr.opcode == OpCodes.Brfalse)
+				{
+					skip = false;
+				}
+			}
+		}
+	}*/
 }

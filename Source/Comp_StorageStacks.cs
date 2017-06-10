@@ -1,6 +1,7 @@
 ﻿using System;
 using Verse;
 using RimWorld;
+using System.Collections.Generic;
 
 namespace RT_Storage
 {
@@ -163,6 +164,20 @@ namespace RT_Storage
 			resultingThing = GenSpawn.Spawn(thing, cell, parent.Map);
 			placedAction?.Invoke(thing, thing.stackCount);
 			return true;
+		}
+
+		public override IEnumerable<Thing> GetStoredThings()
+		{
+			foreach (var cell in parent.OccupiedRect())
+			{
+				foreach (var thing in cell.GetThingList(parent.Map))
+				{
+					if (thing.def.EverHaulable)
+					{
+						yield return thing;
+					}
+				}
+			}
 		}
 	}
 }

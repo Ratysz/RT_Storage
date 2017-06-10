@@ -13,6 +13,60 @@ using UnityEngine;
 namespace RT_Storage
 {
 	[HarmonyPatch]
+	static class Patch_TFBBI_RegProc
+	{
+		static Type type = typeof(WorkGiver_DoBill).GetNestedTypes(AccessTools.all)
+				 .FirstOrDefault(type => type.FullName.Contains("TryFindBestBillIngredients"));
+		static FieldInfo[] captureFields = type.GetFields(AccessTools.all);
+		static FieldInfo[] classFields = typeof(WorkGiver_DoBill).GetFields(AccessTools.all);
+		static MethodBase TargetMethod()
+		{
+			return type.GetMethods(AccessTools.all)
+				.FirstOrDefault(method => method.Name.Contains("15E"));
+		}
+		static FieldInfo processedThingsField = classFields
+			 .FirstOrDefault(field => field.FieldType == typeof(HashSet<Thing>));
+		static FieldInfo newRelevantThingsField = classFields
+			 .FirstOrDefault(field => field.Name.Contains("newRelevantThings"));
+		static FieldInfo pawnField = captureFields
+			.FirstOrDefault(field => field.FieldType == typeof(Pawn));
+		static FieldInfo billGiverField = captureFields
+			.FirstOrDefault(field => field.FieldType == typeof(Thing));
+		static FieldInfo baseValidatorField = captureFields
+			.FirstOrDefault(field => field.FieldType == typeof(Predicate<Thing>));
+
+		static bool Prefix(object __instance, Region r)
+		{
+			HashSet<Thing> processedThings = (HashSet<Thing>)processedThingsField.GetValue(__instance);
+			List<Thing> newRelevantThings = (List<Thing>)newRelevantThingsField.GetValue(__instance);
+			Pawn pawn = (Pawn)pawnField.GetValue(__instance);
+			Thing billGiver = (Thing)billGiverField.GetValue(__instance);
+			Predicate<Thing> baseValidator = (Predicate<Thing>)baseValidatorField.GetValue(__instance);
+			
+			var buildings = r.ListerThings.ThingsMatching(ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial));
+			foreach (var building in buildings)
+			{
+				var comp = building.Position.GetStorageComponent<Comp_StorageOutput>(building.Map);
+				if (comp != null && comp.GetStoredThings() != null
+					&& ReachabilityWithinRegion.ThingFromRegionListerReachable(building, r, PathEndMode.ClosestTouch, pawn))
+				{
+					foreach (var thing in comp.GetStoredThings())
+					{
+						if (!processedThings.Contains(thing)
+							&& baseValidator(thing)
+							&& (!thing.def.IsMedicine || !(billGiver is Pawn)))
+						{
+							processedThings.Add(thing);
+							newRelevantThings.Add(thing);
+						}
+					}
+				}
+			}
+			return true;
+		}
+	}
+
+	[HarmonyPatch]
 	static class Patch_TFBBI_BaseValidator
 	{
 		static MethodBase TargetMethod()
@@ -93,7 +147,8 @@ namespace RT_Storage
 
 		public static IntVec3 ClosestOutputOrPosition(Thing thing, IntVec3 rootCell)
 		{
-			var cell = thing.Map.GetStorageCoordinator().FindClosestOutput(thing, rootCell);
+			Utility.Debug($"Patch_TFBBI_RegProc_Comparison {thing} | {rootCell}");
+			var cell = thing.Map.GetStorageCoordinator().FindClosestOutputCell(thing, rootCell);
 			if (cell != IntVec3.Invalid)
 			{
 				int distanceToOutput = (cell - rootCell).LengthHorizontalSquared;
@@ -170,7 +225,7 @@ namespace RT_Storage
 		{
 			LocalTargetInfo targetInfo = toil.actor.jobs.curJob.GetTarget(targetIndex);
 			Thing thing = targetInfo.Thing;
-			Utility.Debug($"{toil.actor} | {toil.actor.jobs.curJob} | {targetInfo}");
+			Utility.Debug($"Patch_GotoThing_InitAction {toil.actor} | {toil.actor.jobs.curJob} | {targetInfo}");
 			if (thing != null)
 			{
 				Comp_StorageAbstract comp = thing.Position.GetStorageComponent<Comp_StorageAbstract>(thing.Map);
