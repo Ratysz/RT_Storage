@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Reflection;
 using System.Text;
 using RimWorld;
 using Verse;
@@ -45,6 +45,16 @@ namespace RT_Storage
 		public static bool HasStorageInputCells(this SlotGroup slotGroup)
 		{
 			return slotGroup.parent.Map.GetStorageCoordinator().HasStorageInputCells(slotGroup);
+		}
+		
+		public static FieldType Get<FieldType>(this object instance, FieldInfo fieldInfo)
+		{
+			return (FieldType)fieldInfo.GetValue(instance);
+		}
+
+		public static void Set(this object instance, FieldInfo fieldInfo, object value)
+		{
+			fieldInfo.SetValue(instance, value);
 		}
 	}
 }
