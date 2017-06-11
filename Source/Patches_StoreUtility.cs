@@ -1,52 +1,15 @@
-﻿using Harmony;
-using RimWorld;
-using Verse;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using System;
-using System.Linq;
+using Harmony;
+using RimWorld;
+using Verse;
 using Verse.AI;
 
 namespace RT_Storage
 {
-	[HarmonyPatch(typeof(GenDrop))]
-	[HarmonyPatch("TryDropSpawn")]
-	static class Patch_TryDropSpawn
-	{
-		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-		{
-			MethodInfo sneakyMethod = AccessTools.Method(typeof(Patch_TryDropSpawn), "TryPlaceThing");
-			bool patched = false;
-			var instrList = instructions.ToList();
-			for (int i = 0; i < instrList.Count; i++)
-			{
-				if (!patched
-					&& i == instrList.Count - 2)
-				{
-					patched = true;
-					instrList[i].operand = sneakyMethod;
-				}
-				yield return instrList[i];
-			}
-		}
-
-		static bool TryPlaceThing(Thing thing, IntVec3 dropCell, Map map, ThingPlaceMode mode,
-			out Thing resultingThing, Action<Thing, int> placedAction = null)
-		{
-			Comp_StorageInput comp = dropCell.GetStorageComponent<Comp_StorageInput>(map);
-			if (comp != null)
-			{
-				IntVec3 storageCell = comp.ObtainCell(thing);
-				if (storageCell != IntVec3.Invalid)
-				{
-					return comp.Store(thing, storageCell, out resultingThing, placedAction);
-				}
-			}
-			return GenPlace.TryPlaceThing(thing, dropCell, map, mode, out resultingThing, placedAction);
-		}
-	}
-
 	[HarmonyPatch(typeof(StoreUtility))]
 	[HarmonyPatch("TryFindBestBetterStoreCellFor")]
 	static class Patch_TryFindBestBetterStoreCellFor
@@ -119,20 +82,6 @@ namespace RT_Storage
 				return false;
 			}
 			return true;
-		}
-	}
-
-	[HarmonyPatch(typeof(HaulAIUtility))]
-	[HarmonyPatch("HaulMaxNumToCellJob")]
-	static class Patch_HaulMaxNumToCellJob
-	{
-		static void Postfix(ref Job __result, Pawn p, Thing t, IntVec3 storeCell)
-		{
-			Comp_StorageInput comp = storeCell.GetStorageComponent<Comp_StorageInput>(p.Map);
-			if (comp != null)
-			{
-				__result.count = comp.CanAccept(t);
-			}
 		}
 	}
 }

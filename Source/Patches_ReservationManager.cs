@@ -1,4 +1,10 @@
-﻿using Harmony;
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
+using Harmony;
+using RimWorld;
 using Verse;
 using Verse.AI;
 
