@@ -56,7 +56,7 @@ namespace RT_Storage
 			Comp_StorageInput comp = c.GetStorageComponent<Comp_StorageInput>(map);
 			if (comp != null)
 			{
-				__result = comp.CanAccept(storable) > 0;
+				__result = comp.GetSlotGroup().Settings.AllowedToAccept(storable);
 				return false;
 			}
 			return true;
@@ -74,11 +74,11 @@ namespace RT_Storage
 			{
 				__result = comp.CanAccept(t) > 0
 					&& (carrier == null
-					|| carrier.Map.reachability.CanReach(
-						(!t.SpawnedOrAnyParentSpawned) ? carrier.PositionHeld : t.PositionHeld,
-						c,
-						PathEndMode.ClosestTouch,
-						TraverseParms.For(carrier, Danger.Deadly, TraverseMode.ByPawn, false)));
+						|| (carrier.Map.reachability.CanReach(
+								(!t.SpawnedOrAnyParentSpawned) ? carrier.PositionHeld : t.PositionHeld,
+								c,
+								PathEndMode.ClosestTouch,
+								TraverseParms.For(carrier, Danger.Deadly, TraverseMode.ByPawn, false))));
 				return false;
 			}
 			return true;

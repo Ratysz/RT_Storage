@@ -22,6 +22,7 @@ namespace RT_Storage
 		protected List<Thing> linkedOutputParents = new List<Thing>();
 		protected List<Comp_StorageInput> linkedInputs = new List<Comp_StorageInput>();
 		protected List<Thing> linkedInputParents = new List<Thing>();
+		protected List<StorageReservation> reservations = new List<StorageReservation>();
 
 		public override void PostDeSpawn(Map map)
 		{
@@ -38,6 +39,7 @@ namespace RT_Storage
 			}
 			linkedInputs.Clear();
 			linkedInputParents.Clear();
+			reservations.Clear();
 		}
 
 		public void Notify_IOAdded(Comp_StorageIOAbstract io)
@@ -76,25 +78,64 @@ namespace RT_Storage
 			}
 		}
 
-		virtual public int CanAccept(Thing thing)
+		public void Notify_ReservationRemoved(StorageReservation reservation)
 		{
-			return 0;
+			reservations.Remove(reservation);
 		}
 
-		virtual public IntVec3 ObtainCell(Thing thing)
+		public bool CanReserve(Thing thing, Pawn pawn)
 		{
-			return IntVec3.Invalid;
-		}
-
-		virtual public bool Store(Thing thing, IntVec3 cell, out Thing resultingThing, Action<Thing, int> placedAction = null)
-		{
-			resultingThing = null;
+			foreach (var reservation in reservations)
+			{
+				if (reservation.thing == thing)
+				{
+					return false;
+				}
+			}
+			if (CanAccept(thing) > 0)
+			{
+				return true;
+			}
 			return false;
+		}
+
+		public bool Reserve(Thing thing, Pawn pawn)
+		{
+			foreach (var reservation in reservations)
+			{
+				if (reservation.thing == thing)
+				{
+					return false;
+				}
+			}
+			var newReservation = new StorageReservation(this, thing, pawn);
+			reservations.Add(newReservation);
+			parent.Map.GetStorageCoordinator().AddReservation(newReservation);
+			return true;
+		}
+
+		public IEnumerable<Thing> GetExpectedThings()
+		{
+			foreach (var reservation in reservations)
+			{
+				yield return reservation.thing;
+			}
 		}
 
 		virtual public IEnumerable<Thing> GetStoredThings()
 		{
 			return null;
+		}
+
+		virtual public int CanAccept(Thing thing)
+		{
+			return 0;
+		}
+
+		virtual public bool Store(Thing thing, out Thing resultingThing, Action<Thing, int> placedAction = null)
+		{
+			resultingThing = null;
+			return false;
 		}
 
 		protected Thing cachedOutputParent = null;

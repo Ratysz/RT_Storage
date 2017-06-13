@@ -15,6 +15,7 @@ namespace RT_Storage
 		private List<Comp_StorageInput> inputs = new List<Comp_StorageInput>();
 		private List<Comp_StorageOutput> outputs = new List<Comp_StorageOutput>();
 		private List<Comp_StorageAbstract> storages = new List<Comp_StorageAbstract>();
+		private List<StorageReservation> reservations = new List<StorageReservation>();
 
 		public MapComponent_StorageCoordinator(Map map) : base(map)
 		{
@@ -71,7 +72,7 @@ namespace RT_Storage
 			compsInCell.Add((Comp_CoordinatedAbstract)component);
 		}
 
-		public void Notify_ComponentDespawned(ThingComp component)
+		public void Notify_ComponentDeSpawned(ThingComp component)
 		{
 			Type type = component.GetType();
 			IntVec3 cell = component.parent.Position;
@@ -109,6 +110,13 @@ namespace RT_Storage
 			else if (typeof(Comp_StorageAbstract).IsAssignableFrom(type))
 			{
 				storages.Remove((Comp_StorageAbstract)component);
+				foreach (var reservation in reservations.ToList())
+				{
+					if (reservation.storage == (Comp_StorageAbstract)component)
+					{
+						reservations.Remove(reservation);
+					}
+				}
 			}
 			List<Comp_CoordinatedAbstract> compsInCell;
 			map_cell_comps.TryGetValue(cell, out compsInCell);
@@ -140,6 +148,30 @@ namespace RT_Storage
 		public void Notify_SlotGroupRemoved(SlotGroup slotGroup)
 		{
 			map_slotGroup_inputCells.Remove(slotGroup);
+		}
+
+		public void Notify_ReservationsCleared(Pawn pawn)
+		{
+			foreach (var reservation in reservations.ToList())
+			{
+				if (reservation.pawn == pawn)
+				{
+					reservation.storage.Notify_ReservationRemoved(reservation);
+					reservations.Remove(reservation);
+				}
+			}
+		}
+
+		public void Notify_ReservationsCleared(Thing thing)
+		{
+			foreach (var reservation in reservations.ToList())
+			{
+				if (reservation.thing == thing)
+				{
+					reservation.storage.Notify_ReservationRemoved(reservation);
+					reservations.Remove(reservation);
+				}
+			}
 		}
 		#endregion
 
@@ -194,6 +226,16 @@ namespace RT_Storage
 			return null;
 		}
 
+		internal void AddReservation(StorageReservation reservation)
+		{
+			reservations.Add(reservation);
+		}
+
+		internal void RemoveReservation(StorageReservation reservation)
+		{
+			reservations.Remove(reservation);
+		}
+
 		public override void MapComponentTick()
 		{
 			base.MapComponentTick();
@@ -213,7 +255,7 @@ namespace RT_Storage
 				}
 				unconnectedInputs.Remove(input);
 			}
-			//DebugDump();
+			DebugDump();
 		}
 
 		public Comp_StorageAbstract DebugGetAnyStorage()
@@ -239,6 +281,11 @@ namespace RT_Storage
 				}
 				Utility.Debug("+ dumping outputs");
 				foreach (var kvp in outputs)
+				{
+					Utility.Debug($"\t{kvp.ToString()}");
+				}
+				Utility.Debug("+ dumping reservations");
+				foreach (var kvp in reservations)
 				{
 					Utility.Debug($"\t{kvp.ToString()}");
 				}

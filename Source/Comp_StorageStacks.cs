@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using Verse;
 using RimWorld;
 using System.Collections.Generic;
+using System.Text;
 
 namespace RT_Storage
 {
@@ -23,11 +25,61 @@ namespace RT_Storage
 				return (CompProperties_StorageStacks)props;
 			}
 		}
-		public int maxStacks
+		public int maxStacksOnCell
 		{
 			get
 			{
 				return properties.maxStacks;
+			}
+		}
+		public int maxStacks
+		{
+			get
+			{
+				return specificCellsCount * maxStacksOnCell;
+			}
+		}
+
+		public override IEnumerable<Thing> GetStoredThings()
+		{
+			foreach (var cell in specificCells)
+			{
+				foreach (var thing in cell.GetThingList(parent.Map))
+				{
+					if (thing.def.EverStoreable)
+					{
+						yield return thing;
+					}
+				}
+			}
+		}
+
+		private class VirtualThing
+		{
+			public ThingDef def;
+			public ThingDef stuff;
+			public int stackCount;
+
+			public VirtualThing(Thing thing)
+			{
+				def = thing.def;
+				stuff = thing.Stuff;
+				stackCount = thing.stackCount;
+			}
+
+			public bool TryAbsorbStack(VirtualThing otherThing)
+			{
+				if (def == otherThing.def && stuff == otherThing.stuff)
+				{
+					int amount = Math.Min(def.stackLimit - stackCount, otherThing.stackCount);
+					stackCount += amount;
+					otherThing.stackCount -= amount;
+					if (otherThing.stackCount <= 0)
+					{
+						return true;
+					}
+				}
+				return false;
 			}
 		}
 
@@ -37,147 +89,133 @@ namespace RT_Storage
 			{
 				return 0;
 			}
-			foreach (var cell in parent.OccupiedRect())
+			var builder = new StringBuilder("CanAccept: ");
+			int fullStacks = 0;
+			var storedThings = new List<VirtualThing>();
+			builder.Append("|| stored things: ");
+			foreach (var storedThing in GetStoredThings())
 			{
-				var things = cell.GetThingList(parent.Map);
-				int storeables = 0;
-				bool freeSpace = true;
-				foreach (var cellThing in things)
+				builder.Append($"({storedThing.stackCount} {storedThing.def}) ");
+				if (storedThing.stackCount >= storedThing.def.stackLimit)
 				{
-					if (cellThing.CanStackWith(thing)
-						&& cellThing.stackCount < cellThing.def.stackLimit)
+					fullStacks++;
+					if (fullStacks >= maxStacks)
 					{
-						return cellThing.def.stackLimit - cellThing.stackCount;
+						builder.Append($"|| STORAGE ALREADY FULL");
+						Utility.Debug(builder.ToString());
+						return 0;
 					}
-					if (cellThing.def.EverStoreable)
+				}
+				else
+				{
+					storedThings.Add(new VirtualThing(storedThing));
+				}
+			}
+			builder.Append("|| incoming things: ");
+			var incomingThings = new List<VirtualThing>();
+			foreach (var incomingThing in GetExpectedThings())
+			{
+				builder.Append($"({incomingThing.stackCount} {incomingThing.def}) ");
+				if (incomingThing.stackCount >= incomingThing.def.stackLimit)
+				{
+					fullStacks++;
+					if (fullStacks >= maxStacks)
 					{
-						storeables++;
-						if (storeables >= maxStacks)
+						builder.Append($"|| STORAGE RESERVED TO FULL");
+						Utility.Debug(builder.ToString());
+						return 0;
+					}
+				}
+				else
+				{
+					incomingThings.Add(new VirtualThing(incomingThing));
+				}
+			}
+			if (storedThings.Count + incomingThings.Count < maxStacks - fullStacks)
+			{
+				builder.Append($"|| CAN STORE {thing.stackCount} of {thing.def}");
+				Utility.Debug(builder.ToString());
+				return thing.stackCount;
+			}
+			builder.Append($"|| merging ");
+			while (true)
+			{
+				foreach (var storedThing in storedThings.ToList())
+				{
+					foreach (var incomingThing in incomingThings.ToList())
+					{
+						if (storedThing.TryAbsorbStack(incomingThing))
 						{
-							freeSpace = false;
-							break;
+							incomingThings.Remove(incomingThing);
 						}
 					}
-				}
-				if (freeSpace)
-				{
-					return thing.def.stackLimit;
-				}
-			}
-			return 0;
-		}
-
-		public override IntVec3 ObtainCell(Thing thing)
-		{
-			if (!parent.GetSlotGroup().Settings.AllowedToAccept(thing))
-			{
-				return IntVec3.Invalid;
-			}
-			foreach (var cell in parent.OccupiedRect())
-			{
-				var things = cell.GetThingList(parent.Map);
-				int storeables = 0;
-				bool freeSpace = true;
-				foreach (var cellThing in things)
-				{
-					if (cellThing.CanStackWith(thing)
-						&& cellThing.stackCount < cellThing.def.stackLimit)
+					if (storedThing.stackCount == storedThing.def.stackLimit)
 					{
-						return cell;
-					}
-					else if (cellThing.def.EverStoreable)
-					{
-						storeables++;
-						if (storeables >= maxStacks)
+						fullStacks++;
+						if (fullStacks >= maxStacks)
 						{
-							freeSpace = false;
-							break;
+							builder.Append($"|| STORAGE RESERVED TO FULL");
+							Utility.Debug(builder.ToString());
+							return 0;
 						}
+						storedThings.Remove(storedThing);
 					}
 				}
-				if (freeSpace)
+				if (incomingThings.Count == 0)
 				{
-					return cell;
+					break;
+				}
+				if (storedThings.Count == 0)
+				{
+					storedThings.Add(incomingThings.First());
+					incomingThings.Remove(incomingThings.First());
+					if (incomingThings.Count == 0)
+					{
+						break;
+					}
 				}
 			}
-			return IntVec3.Invalid;
+			builder.Append($"|| merged ");
+			if (storedThings.Count + fullStacks == maxStacks)
+			{
+				var vThing = new VirtualThing(thing);
+				foreach (var storedThing in storedThings)
+				{
+					if (storedThing.TryAbsorbStack(vThing))
+					{
+						builder.Append($"|| CAN STORE {thing.stackCount} of {thing.def}");
+						Utility.Debug(builder.ToString());
+						return thing.stackCount;
+					}
+				}
+				builder.Append($"|| CAN STORE ONLY {thing.stackCount - vThing.stackCount} of {thing.def}");
+				Utility.Debug(builder.ToString());
+				return thing.stackCount - vThing.stackCount;
+			}
+			builder.Append($"|| CAN STORE {thing.stackCount} of {thing.def}");
+			Utility.Debug(builder.ToString());
+			return thing.stackCount;
 		}
 
-		public override bool Store(Thing thing, IntVec3 cell, out Thing resultingThing, Action<Thing, int> placedAction = null)
+		public override bool Store(Thing thing, out Thing resultingThing, Action<Thing, int> placedAction = null)
 		{
-			Thing thingToStore = thing;
-			while (thing.stackCount > thing.def.stackLimit)
+			int stacksPassed = 0;
+			foreach (var storedThing in GetStoredThings())
 			{
-				Thing output;
-				bool result = Store(thing.SplitOff(thing.def.stackLimit), cell, out output);
-				if (thing.stackCount == 0)
+				if (storedThing.TryAbsorbStack(thing, true))
 				{
-					resultingThing = output;
+					resultingThing = storedThing;
 					placedAction?.Invoke(thing, thing.stackCount);
-					return result;
+					return true;
 				}
+				stacksPassed++;
 			}
-			if (thing.def.stackLimit > 1)
-			{
-				var thingList = cell.GetThingList(parent.Map);
-				int storeables = 0;
-				int stackCount = thing.stackCount;
-				Thing partiallyAbsorbedThing = null;
-
-				foreach (var thingOnCell in thingList)
-				{
-					if (thingOnCell.def.EverStoreable)
-					{
-						storeables++;
-					}
-					if (thingOnCell.CanStackWith(thing))
-					{
-						if (thingOnCell.TryAbsorbStack(thing, true))
-						{
-							resultingThing = thingOnCell;
-							placedAction?.Invoke(thingOnCell, stackCount);
-							return true;
-						}
-						else
-						{
-							if (partiallyAbsorbedThing == null)
-							{
-								partiallyAbsorbedThing = thingOnCell;
-							}
-						}
-					}
-				}
-				if (storeables >= maxStacks)
-				{
-					resultingThing = null;
-					if (placedAction != null && stackCount != thing.stackCount && partiallyAbsorbedThing != null)
-					{
-						placedAction(partiallyAbsorbedThing, stackCount - thing.stackCount);
-					}
-					if (thingToStore != thing)
-					{
-						thingToStore.TryAbsorbStack(thing, false);
-					}
-					return false;
-				}
-			}
-			resultingThing = GenSpawn.Spawn(thing, cell, parent.Map);
+			resultingThing = GenSpawn.Spawn(
+				thing,
+				specificCells.Skip(stacksPassed % specificCellsCount).First(),
+				parent.Map);
 			placedAction?.Invoke(thing, thing.stackCount);
 			return true;
-		}
-
-		public override IEnumerable<Thing> GetStoredThings()
-		{
-			foreach (var cell in parent.OccupiedRect())
-			{
-				foreach (var thing in cell.GetThingList(parent.Map))
-				{
-					if (thing.def.EverHaulable)
-					{
-						yield return thing;
-					}
-				}
-			}
 		}
 	}
 }

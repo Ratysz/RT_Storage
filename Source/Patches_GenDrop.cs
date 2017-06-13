@@ -53,11 +53,7 @@ namespace RT_Storage
 			Comp_StorageInput comp = dropCell.GetStorageComponent<Comp_StorageInput>(map);
 			if (comp != null)
 			{
-				IntVec3 storageCell = comp.ObtainCell(thing);
-				if (storageCell != IntVec3.Invalid)
-				{
-					return comp.Store(thing, storageCell, out resultingThing, placedAction);
-				}
+				return comp.Store(thing, out resultingThing, placedAction);
 			}
 			return GenPlace.TryPlaceThing(thing, dropCell, map, mode, out resultingThing, placedAction);
 		}

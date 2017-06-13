@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Buildings>
+	<ThingDef>
+		<defName>Test_Storage_Big</defName>
+		<label>Test BIG storage</label>
+		<description>Does stuff.</description>
+		<designationCategory>Misc</designationCategory>
+		
+		<category>Building</category>
+		<thingClass>Building</thingClass>
+		<tickerType>Never</tickerType>
+		<minifiedDef>MinifiedFurniture</minifiedDef>
+		
+		<graphicData>
+			<texPath>Things/Building/Misc/DropBeacon</texPath>
+			<graphicClass>Graphic_Single</graphicClass>
+			<shadowData>
+				<volume>(0.3, 0.4, 0.3)</volume>
+				<offset>(0,0,-0.1)</offset>
+			</shadowData>
+			<damageData>
+				<rect>(0.2,0.2,0.6,0.6)</rect>
+			</damageData>
+		</graphicData>
+		<drawerType>MapMeshAndRealTime</drawerType>
+		<repairEffect>Repair</repairEffect>
+		<constructEffect>ConstructMetal</constructEffect>
+		<soundImpactDefault>BulletImpactMetal</soundImpactDefault>
+		<filthLeaving>BuildingRubble</filthLeaving>
+		<pathCost>8</pathCost>
+		<size>(2,2)</size>
+		
+		<leaveResourcesWhenKilled>True</leaveResourcesWhenKilled>
+		<terrainAffordanceNeeded>Light</terrainAffordanceNeeded>
+		<altitudeLayer>Building</altitudeLayer>
+		<passability>Standable</passability>
+		<building>
+			<isEdifice>True</isEdifice>
+			<ai_chillDestination>False</ai_chillDestination>
+		</building>
+		<selectable>true</selectable>
+		<rotatable>false</rotatable>
+		<fillPercent>0.15</fillPercent>
+		
+		<statBases>
+			<MaxHitPoints>75</MaxHitPoints>
+			<WorkToBuild>0</WorkToBuild>
+			<Flammability>1.0</Flammability>
+			<SellPriceFactor>0.70</SellPriceFactor>
+		</statBases>
+		
+		<costList>
+			<Steel>0</Steel>
+		</costList>
+		
+		<comps>
+			<li Class="RT_Storage.CompProperties_StorageStacks"/>
+		</comps>
+	</ThingDef>
+</Buildings>

@@ -21,6 +21,24 @@ namespace RT_Storage
 			}
 		}
 
+		virtual public bool CanReserve(Thing thing, Pawn pawn)
+		{
+			if (linkedStorage == null)
+			{
+				return false;
+			}
+			return linkedStorage.Reserve(thing, pawn);
+		}
+
+		virtual public bool Reserve(Thing thing, Pawn pawn)
+		{
+			if (linkedStorage == null)
+			{
+				return false;
+			}
+			return linkedStorage.Reserve(thing, pawn);
+		}
+
 		virtual public int CanAccept(Thing thing)
 		{
 			if (linkedStorage == null)
@@ -30,23 +48,14 @@ namespace RT_Storage
 			return linkedStorage.CanAccept(thing);
 		}
 
-		public IntVec3 ObtainCell(Thing thing)
-		{
-			if (linkedStorage == null)
-			{
-				return IntVec3.Invalid;
-			}
-			return linkedStorage.ObtainCell(thing);
-		}
-
-		virtual public bool Store(Thing thing, IntVec3 cell, out Thing resultingThing, Action<Thing, int> placedAction = null)
+		virtual public bool Store(Thing thing, out Thing resultingThing, Action<Thing, int> placedAction = null)
 		{
 			if (linkedStorage == null)
 			{
 				resultingThing = null;
 				return false;
 			}
-			return linkedStorage.Store(thing, cell, out resultingThing, placedAction);
+			return linkedStorage.Store(thing, out resultingThing, placedAction);
 		}
 	}
 }

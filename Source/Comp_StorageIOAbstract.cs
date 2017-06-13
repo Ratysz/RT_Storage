@@ -30,7 +30,7 @@ namespace RT_Storage
 				linkedStorage = (Comp_StorageAbstract)AccessTools
 					.Method(typeof(Extensions), "GetStorageComponent")
 					.MakeGenericMethod(properties.linkToParentsStorage)
-					.Invoke(null, new object[] { parent.OccupiedRect().BottomLeft, parent.Map });
+					.Invoke(null, new object[] { parent.Position, parent.Map });
 			}
 			else
 			{
