@@ -31,7 +31,7 @@ namespace RT_Storage
 					{
 						thing = claimant.CurJob.targetA.Thing;
 					}
-					if (thing != null && comp.Reserve(claimant, thing))
+					if (thing != null && thing.def.EverHaulable && comp.Reserve(claimant, thing))
 					{
 						__result = true;
 						return false;
