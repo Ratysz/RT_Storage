@@ -67,6 +67,13 @@ namespace RT_Storage
 				stackCount = thing.stackCount;
 			}
 
+			public VirtualThing(StorageReservation reservation)
+			{
+				def = reservation.def;
+				stuff = reservation.stuff;
+				stackCount = reservation.stackCount;
+			}
+
 			public bool TryAbsorbStack(VirtualThing otherThing)
 			{
 				if (def == otherThing.def && stuff == otherThing.stuff)
@@ -113,7 +120,7 @@ namespace RT_Storage
 			}
 			builder.Append("|| incoming things: ");
 			var incomingThings = new List<VirtualThing>();
-			foreach (var incomingThing in GetExpectedThings())
+			foreach (var incomingThing in GetStorageReservations())
 			{
 				builder.Append($"({incomingThing.stackCount} {incomingThing.def}) ");
 				if (incomingThing.stackCount >= incomingThing.def.stackLimit)
@@ -121,7 +128,7 @@ namespace RT_Storage
 					fullStacks++;
 					if (fullStacks >= maxStacks)
 					{
-						builder.Append($"|| STORAGE RESERVED TO FULL");
+						builder.Append($"|| STORAGE RESERVED TO FULL (early)");
 						Utility.Debug(builder.ToString());
 						return 0;
 					}
@@ -133,9 +140,9 @@ namespace RT_Storage
 			}
 			if (storedThings.Count + incomingThings.Count < maxStacks - fullStacks)
 			{
-				builder.Append($"|| CAN STORE {thing.stackCount} of {thing.def}");
+				builder.Append($"|| CAN STORE {thing.def.stackLimit} of {thing.def} (early)");
 				Utility.Debug(builder.ToString());
-				return thing.stackCount;
+				return thing.def.stackLimit;
 			}
 			builder.Append($"|| merging ");
 			while (true)
@@ -151,10 +158,11 @@ namespace RT_Storage
 					}
 					if (storedThing.stackCount == storedThing.def.stackLimit)
 					{
+						builder.Append(": filled a stack ");
 						fullStacks++;
 						if (fullStacks >= maxStacks)
 						{
-							builder.Append($"|| STORAGE RESERVED TO FULL");
+							builder.Append($"|| STORAGE RESERVED TO FULL (merging)");
 							Utility.Debug(builder.ToString());
 							return 0;
 						}
@@ -167,6 +175,7 @@ namespace RT_Storage
 				}
 				if (storedThings.Count == 0)
 				{
+					builder.Append($": storing a stack ({incomingThings.First().stackCount} {incomingThings.First().def}) ");
 					storedThings.Add(incomingThings.First());
 					incomingThings.Remove(incomingThings.First());
 					if (incomingThings.Count == 0)
@@ -179,26 +188,29 @@ namespace RT_Storage
 			if (storedThings.Count + fullStacks == maxStacks)
 			{
 				var vThing = new VirtualThing(thing);
+				vThing.stackCount = vThing.def.stackLimit;
 				foreach (var storedThing in storedThings)
 				{
-					if (storedThing.TryAbsorbStack(vThing))
+					storedThing.TryAbsorbStack(vThing);
+					/*if (storedThing.TryAbsorbStack(vThing))
 					{
-						builder.Append($"|| CAN STORE {thing.stackCount} of {thing.def}");
+						builder.Append($"|| CAN STORE {thing.stackCount} of {thing.def} (merged full)");
 						Utility.Debug(builder.ToString());
 						return thing.stackCount;
-					}
+					}*/
 				}
-				builder.Append($"|| CAN STORE ONLY {thing.stackCount - vThing.stackCount} of {thing.def}");
+				builder.Append($"|| CAN STORE ONLY {thing.def.stackLimit - vThing.stackCount} of {thing.def}");
 				Utility.Debug(builder.ToString());
-				return thing.stackCount - vThing.stackCount;
+				return thing.def.stackLimit - vThing.stackCount;
 			}
-			builder.Append($"|| CAN STORE {thing.stackCount} of {thing.def}");
+			builder.Append($"|| CAN STORE {thing.def.stackLimit} of {thing.def} (late)");
 			Utility.Debug(builder.ToString());
-			return thing.stackCount;
+			return thing.def.stackLimit;
 		}
 
 		public override bool Store(Thing thing, out Thing resultingThing, Action<Thing, int> placedAction = null)
 		{
+			Utility.Debug($"Storing {thing.stackCount} of {thing.def}");
 			int stacksPassed = 0;
 			foreach (var storedThing in GetStoredThings())
 			{

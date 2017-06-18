@@ -31,39 +31,7 @@ namespace RT_Storage
 					{
 						thing = claimant.CurJob.targetA.Thing;
 					}
-					if (thing != null && comp.Reserve(thing, claimant))
-					{
-						__result = true;
-						return false;
-					}
-				}
-			}
-			return true;
-		}
-	}
-
-	[HarmonyPatch(typeof(ReservationManager))]
-	[HarmonyPatch("CanReserve")]
-	static class Patch_CanReserve
-	{
-		static bool Prefix(ref bool __result, Pawn claimant, LocalTargetInfo target)
-		{
-			var cell = target.Cell;
-			if (cell != null)
-			{
-				Comp_StorageInput comp = cell.GetStorageComponent<Comp_StorageInput>(claimant.Map);
-				if (comp != null)
-				{
-					Thing thing;
-					if (claimant.CurJob.targetA == target)
-					{
-						thing = claimant.CurJob.targetB.Thing;
-					}
-					else
-					{
-						thing = claimant.CurJob.targetA.Thing;
-					}
-					if (thing != null && comp.CanReserve(thing, claimant))
+					if (thing != null && comp.Reserve(claimant, thing))
 					{
 						__result = true;
 						return false;
@@ -84,7 +52,7 @@ namespace RT_Storage
 		}
 	}
 
-	[HarmonyPatch(typeof(ReservationManager))]
+	/*[HarmonyPatch(typeof(ReservationManager))]
 	[HarmonyPatch("ReleaseAllForTarget")]
 	static class Patches_ReleaseAllForTarget
 	{
@@ -92,9 +60,9 @@ namespace RT_Storage
 		{
 			t?.Map?.GetStorageCoordinator().Notify_ReservationsCleared(t);
 		}
-	}
+	}*/
 
-	[HarmonyPatch(typeof(ReservationManager))]
+	/*[HarmonyPatch(typeof(ReservationManager))]
 	[HarmonyPatch("Release")]
 	static class Patches_Release
 	{
@@ -106,5 +74,5 @@ namespace RT_Storage
 				thing?.Map?.GetStorageCoordinator().Notify_ReservationsCleared(thing);
 			}
 		}
-	}
+	}*/
 }

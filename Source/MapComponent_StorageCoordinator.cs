@@ -162,14 +162,15 @@ namespace RT_Storage
 			}
 		}
 
-		public void Notify_ReservationsCleared(Thing thing)
+		public void Notify_OpportunityHaul(Pawn pawn, int additionalCount)
 		{
-			foreach (var reservation in reservations.ToList())
+			foreach (var reservation in reservations)
 			{
-				if (reservation.thing == thing)
+				if (reservation.pawn == pawn)
 				{
-					reservation.storage.Notify_ReservationRemoved(reservation);
-					reservations.Remove(reservation);
+					int buffer = reservation.stackCount;
+					reservation.stackCount = Math.Min(reservation.stackCount + additionalCount, pawn.carryTracker.MaxStackSpaceEver(reservation.def));
+					Utility.Debug($"Updated reservation count (was {buffer}): {reservation}");
 				}
 			}
 		}
@@ -255,7 +256,7 @@ namespace RT_Storage
 				}
 				unconnectedInputs.Remove(input);
 			}
-			DebugDump();
+			//DebugDump();
 		}
 
 		public Comp_StorageAbstract DebugGetAnyStorage()

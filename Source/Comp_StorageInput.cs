@@ -21,22 +21,13 @@ namespace RT_Storage
 			}
 		}
 
-		virtual public bool CanReserve(Thing thing, Pawn pawn)
+		virtual public bool Reserve(Pawn pawn, Thing thing)
 		{
 			if (linkedStorage == null)
 			{
 				return false;
 			}
-			return linkedStorage.Reserve(thing, pawn);
-		}
-
-		virtual public bool Reserve(Thing thing, Pawn pawn)
-		{
-			if (linkedStorage == null)
-			{
-				return false;
-			}
-			return linkedStorage.Reserve(thing, pawn);
+			return linkedStorage.Reserve(pawn, thing);
 		}
 
 		virtual public int CanAccept(Thing thing)

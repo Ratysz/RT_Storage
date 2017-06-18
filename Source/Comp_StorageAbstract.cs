@@ -80,45 +80,26 @@ namespace RT_Storage
 
 		public void Notify_ReservationRemoved(StorageReservation reservation)
 		{
+			Utility.Debug($"Removing reservation {reservation}");
 			reservations.Remove(reservation);
 		}
 
-		public bool CanReserve(Thing thing, Pawn pawn)
+		public bool Reserve(Pawn pawn, Thing thing)
 		{
-			foreach (var reservation in reservations)
-			{
-				if (reservation.thing == thing)
-				{
-					return false;
-				}
-			}
-			if (CanAccept(thing) > 0)
-			{
-				return true;
-			}
-			return false;
-		}
-
-		public bool Reserve(Thing thing, Pawn pawn)
-		{
-			foreach (var reservation in reservations)
-			{
-				if (reservation.thing == thing)
-				{
-					return false;
-				}
-			}
-			var newReservation = new StorageReservation(this, thing, pawn);
+			int count = Math.Min(pawn.carryTracker.AvailableStackSpace(thing.def),
+				Math.Min(pawn.CurJob.count, thing.stackCount));
+			var newReservation = new StorageReservation(this, pawn, thing, count);
 			reservations.Add(newReservation);
 			parent.Map.GetStorageCoordinator().AddReservation(newReservation);
+			Utility.Debug($"{pawn} has reserved for {(count)} of {thing.def} ({thing})");
 			return true;
 		}
 
-		public IEnumerable<Thing> GetExpectedThings()
+		public IEnumerable<StorageReservation> GetStorageReservations()
 		{
 			foreach (var reservation in reservations)
 			{
-				yield return reservation.thing;
+				yield return reservation;
 			}
 		}
 
