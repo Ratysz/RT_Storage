@@ -9,7 +9,6 @@ namespace RT_Storage
 	public class MapComponent_StorageCoordinator : MapComponent
 	{
 		private Dictionary<IntVec3, List<Comp_CoordinatedAbstract>> map_cell_comps = new Dictionary<IntVec3, List<Comp_CoordinatedAbstract>>();
-		private Dictionary<IntVec3, List<Comp_StorageOutput>> map_cell_outputs = new Dictionary<IntVec3, List<Comp_StorageOutput>>();
 		private Dictionary<SlotGroup, List<IntVec3>> map_slotGroup_inputCells = new Dictionary<SlotGroup, List<IntVec3>>();
 		private List<Comp_StorageInput> unconnectedInputs = new List<Comp_StorageInput>();
 		private List<Comp_StorageInput> inputs = new List<Comp_StorageInput>();
@@ -23,14 +22,14 @@ namespace RT_Storage
 		}
 
 		#region Notify
-		public void Notify_ComponentSpawned(ThingComp component)
+		public void Notify_ComponentSpawned(Comp_CoordinatedAbstract component)
 		{
-			IntVec3 cell = component.parent.Position;
 			Type type = component.GetType();
 			if (typeof(Comp_StorageInput).IsAssignableFrom(type))
 			{
-				inputs.Add((Comp_StorageInput)component);
-				SlotGroup slotGroup = ((Comp_StorageIOAbstract)component).GetSlotGroup();
+				Comp_StorageInput comp = (Comp_StorageInput)component;
+				inputs.Add(comp);
+				SlotGroup slotGroup = comp.GetSlotGroup();
 				if (slotGroup != null)
 				{
 					List<IntVec3> cells;
@@ -39,23 +38,16 @@ namespace RT_Storage
 						cells = new List<IntVec3>();
 						map_slotGroup_inputCells.Add(slotGroup, cells);
 					}
-					cells.AddRange(component.parent.OccupiedRect().Cells);
+					cells.AddRange(comp.specificCells);
 				}
 				else
 				{
-					unconnectedInputs.Add((Comp_StorageInput)component);
+					unconnectedInputs.Add(comp);
 				}
 				map.slotGroupManager.Notify_GroupChangedPriority();
 			}
 			else if (typeof(Comp_StorageOutput).IsAssignableFrom(type))
 			{
-				List<Comp_StorageOutput> outputsInCell;
-				if (!map_cell_outputs.TryGetValue(cell, out outputsInCell))
-				{
-					outputsInCell = new List<Comp_StorageOutput>();
-					map_cell_outputs.Add(cell, outputsInCell);
-				}
-				outputsInCell.Add((Comp_StorageOutput)component);
 				outputs.Add((Comp_StorageOutput)component);
 				previousRootCell = IntVec3.Invalid;
 			}
@@ -63,67 +55,67 @@ namespace RT_Storage
 			{
 				storages.Add((Comp_StorageAbstract)component);
 			}
-			List<Comp_CoordinatedAbstract> compsInCell;
-			if (!map_cell_comps.TryGetValue(cell, out compsInCell))
+			foreach (var cell in component.specificCells)
 			{
-				compsInCell = new List<Comp_CoordinatedAbstract>();
-				map_cell_comps.Add(cell, compsInCell);
+				List<Comp_CoordinatedAbstract> compsInCell;
+				if (!map_cell_comps.TryGetValue(cell, out compsInCell))
+				{
+					compsInCell = new List<Comp_CoordinatedAbstract>();
+					map_cell_comps.Add(cell, compsInCell);
+				}
+				compsInCell.Add(component);
 			}
-			compsInCell.Add((Comp_CoordinatedAbstract)component);
 		}
 
-		public void Notify_ComponentDeSpawned(ThingComp component)
+		public void Notify_ComponentDeSpawned(Comp_CoordinatedAbstract component)
 		{
 			Type type = component.GetType();
-			IntVec3 cell = component.parent.Position;
 			if (typeof(Comp_StorageInput).IsAssignableFrom(type))
 			{
-				SlotGroup slotGroup = ((Comp_StorageInput)component).GetSlotGroup();
+				Comp_StorageInput comp = (Comp_StorageInput)component;
+				SlotGroup slotGroup = comp.GetSlotGroup();
 				List<IntVec3> cells;
 				if (slotGroup != null && map_slotGroup_inputCells.TryGetValue(slotGroup, out cells))
 				{
-					foreach (var parentCell in component.parent.OccupiedRect())
+					foreach (var cell in comp.specificCells)
 					{
-						cells.Remove(parentCell);
+						cells.Remove(cell);
 					}
 					if (cells.Count == 0)
 					{
 						map_slotGroup_inputCells.Remove(slotGroup);
 					}
 				}
-				inputs.Remove((Comp_StorageInput)component);
-				unconnectedInputs.Remove((Comp_StorageInput)component);
+				inputs.Remove(comp);
+				unconnectedInputs.Remove(comp);
 				map.slotGroupManager.Notify_GroupChangedPriority();
 			}
 			else if (typeof(Comp_StorageOutput).IsAssignableFrom(type))
 			{
-				List<Comp_StorageOutput> outputsInCell;
-				map_cell_outputs.TryGetValue(cell, out outputsInCell);
-				outputsInCell.Remove((Comp_StorageOutput)component);
-				if (outputsInCell.Count == 0)
-				{
-					map_cell_outputs.Remove(cell);
-				}
 				outputs.Remove((Comp_StorageOutput)component);
 				previousRootCell = IntVec3.Invalid;
 			}
 			else if (typeof(Comp_StorageAbstract).IsAssignableFrom(type))
 			{
-				storages.Remove((Comp_StorageAbstract)component);
+				Comp_StorageAbstract comp = (Comp_StorageAbstract)component;
+				storages.Remove(comp);
 				foreach (var reservation in reservations.ToList())
 				{
-					if (reservation.storage == (Comp_StorageAbstract)component)
+					if (reservation.storage == comp)
 					{
 						reservations.Remove(reservation);
 					}
 				}
 			}
-			List<Comp_CoordinatedAbstract> compsInCell;
-			map_cell_comps.TryGetValue(cell, out compsInCell);
-			compsInCell.Remove((Comp_CoordinatedAbstract)component);
-			if (compsInCell.Count == 0)
+			foreach (var cell in component.specificCells)
 			{
-				map_cell_comps.Remove(cell);
+				List<Comp_CoordinatedAbstract> compsInCell;
+				map_cell_comps.TryGetValue(cell, out compsInCell);
+				compsInCell.Remove(component);
+				if (compsInCell.Count == 0)
+				{
+					map_cell_comps.Remove(cell);
+				}
 			}
 		}
 
@@ -139,7 +131,7 @@ namespace RT_Storage
 			{
 				if (input.GetSlotGroup() == slotGroup)
 				{
-					cells.AddRange(input.parent.OccupiedRect().Cells);
+					cells.AddRange(input.specificCells);
 				}
 			}
 
@@ -252,7 +244,7 @@ namespace RT_Storage
 						cells = new List<IntVec3>();
 						map_slotGroup_inputCells.Add(slotGroup, cells);
 					}
-					cells.AddRange(input.parent.OccupiedRect().Cells);
+					cells.AddRange(input.specificCells);
 				}
 				unconnectedInputs.Remove(input);
 			}
@@ -292,15 +284,6 @@ namespace RT_Storage
 				}
 				Utility.Debug("+ dumping map_cell_comps");
 				foreach (var kvp in map_cell_comps)
-				{
-					Utility.Debug($"\t{kvp.ToString()}");
-					foreach (var iter2 in kvp.Value)
-					{
-						Utility.Debug($"\t\t{iter2.ToString()}");
-					}
-				}
-				Utility.Debug("+ dumping map_cell_outputs");
-				foreach (var kvp in map_cell_outputs)
 				{
 					Utility.Debug($"\t{kvp.ToString()}");
 					foreach (var iter2 in kvp.Value)
