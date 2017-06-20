@@ -73,6 +73,14 @@ namespace RT_Storage
 					throw new NullReferenceException($"{this} could not get parent's CompPowerTrader!");
 				}
 			}
+			if (properties.isFlickable)
+			{
+				compFlickable = parent.TryGetComp<CompFlickable>();
+				if (compFlickable == null)
+				{
+					throw new NullReferenceException($"{this} could not get parent's CompFlickable!");
+				}
+			}
 			parent.Map.GetStorageCoordinator().Notify_ComponentSpawned(this);
 		}
 
