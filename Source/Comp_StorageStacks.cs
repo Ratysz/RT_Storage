@@ -40,20 +40,6 @@ namespace RT_Storage
 			}
 		}
 
-		public override IEnumerable<Thing> GetStoredThings()
-		{
-			foreach (var cell in specificCells)
-			{
-				foreach (var thing in cell.GetThingList(parent.Map))
-				{
-					if (thing.def.EverStoreable)
-					{
-						yield return thing;
-					}
-				}
-			}
-		}
-
 		private class VirtualThing
 		{
 			public ThingDef def;
@@ -90,9 +76,27 @@ namespace RT_Storage
 			}
 		}
 
+		public override IEnumerable<Thing> GetStoredThings()
+		{
+			if (!active)
+			{
+				yield break;
+			}
+			foreach (var cell in specificCells)
+			{
+				foreach (var thing in cell.GetThingList(parent.Map))
+				{
+					if (thing.def.EverStoreable)
+					{
+						yield return thing;
+					}
+				}
+			}
+		}
+
 		public override int CanAccept(Thing thing)
 		{
-			if (!parent.GetSlotGroup().Settings.AllowedToAccept(thing))
+			if (!active || !parent.GetSlotGroup().Settings.AllowedToAccept(thing))
 			{
 				return 0;
 			}
@@ -210,6 +214,11 @@ namespace RT_Storage
 
 		public override bool Store(Thing thing, out Thing resultingThing, Action<Thing, int> placedAction = null)
 		{
+			if (!active)
+			{
+				resultingThing = null;
+				return false;
+			}
 			Utility.Debug($"Storing {thing.stackCount} of {thing.def}");
 			int stacksPassed = 0;
 			foreach (var storedThing in GetStoredThings())

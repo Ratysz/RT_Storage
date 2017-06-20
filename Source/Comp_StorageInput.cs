@@ -23,7 +23,7 @@ namespace RT_Storage
 
 		virtual public bool Reserve(Pawn pawn, Thing thing)
 		{
-			if (linkedStorage == null)
+			if (!active || linkedStorage == null)
 			{
 				return false;
 			}
@@ -32,7 +32,7 @@ namespace RT_Storage
 
 		virtual public int CanAccept(Thing thing)
 		{
-			if (linkedStorage == null)
+			if (!active || linkedStorage == null)
 			{
 				return 0;
 			}
@@ -41,7 +41,7 @@ namespace RT_Storage
 
 		virtual public bool Store(Thing thing, out Thing resultingThing, Action<Thing, int> placedAction = null)
 		{
-			if (linkedStorage == null)
+			if (!active || linkedStorage == null)
 			{
 				resultingThing = null;
 				return false;

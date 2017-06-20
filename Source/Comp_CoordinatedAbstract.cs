@@ -1,11 +1,15 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
+using RimWorld;
 using Verse;
 
 namespace RT_Storage
 {
 	public class CompProperties_CoordinatedAbstract : CompProperties
 	{
+		public bool requirePower = false;
+		public bool isFlickable = false;
 		public bool useSpecificCells = false;
 		public List<IntVec3> specificCellsOffsets = new List<IntVec3>();
 	}
@@ -30,10 +34,10 @@ namespace RT_Storage
 						yield return cellOffset.RotatedBy(parent.Rotation);
 					}
 				}
-					foreach (var parentCell in parent.OccupiedRect())
-					{
-						yield return parentCell;
-					}
+				foreach (var parentCell in parent.OccupiedRect())
+				{
+					yield return parentCell;
+				}
 			}
 		}
 		public int specificCellsCount
@@ -47,10 +51,28 @@ namespace RT_Storage
 				return parent.OccupiedRect().Cells.ToList().Count;
 			}
 		}
+		public bool active
+		{
+			get
+			{
+				return (!properties.isFlickable || compFlickable.SwitchIsOn)
+					&& (!properties.requirePower || compPowerTrader.PowerOn);
+			}
+		}
+		private CompPowerTrader compPowerTrader;
+		private CompFlickable compFlickable;
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
 			base.PostSpawnSetup(respawningAfterLoad);
+			if (properties.requirePower)
+			{
+				compPowerTrader = parent.TryGetComp<CompPowerTrader>();
+				if (compPowerTrader == null)
+				{
+					throw new NullReferenceException($"{this} could not get parent's CompPowerTrader!");
+				}
+			}
 			parent.Map.GetStorageCoordinator().Notify_ComponentSpawned(this);
 		}
 

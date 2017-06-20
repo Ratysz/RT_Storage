@@ -53,16 +53,16 @@ namespace RT_Storage
 
 		public SlotGroup GetSlotGroup()
 		{
-			if (linkedStorage == null)
+			if (!active || linkedStorage == null)
 			{
 				return null;
 			}
 			return linkedStorage.parent.GetSlotGroup();
 		}
 
-		virtual public IEnumerable<Thing> GetStoredThings()
+		public IEnumerable<Thing> GetStoredThings()
 		{
-			if (linkedStorage == null)
+			if (!active || linkedStorage == null)
 			{
 				return null;
 			}

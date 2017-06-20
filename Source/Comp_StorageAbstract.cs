@@ -86,6 +86,10 @@ namespace RT_Storage
 
 		public bool Reserve(Pawn pawn, Thing thing)
 		{
+			if (!active)
+			{
+				return false;
+			}
 			int count = Math.Min(pawn.carryTracker.AvailableStackSpace(thing.def),
 				Math.Min(pawn.CurJob.count, thing.stackCount));
 			var newReservation = new StorageReservation(this, pawn, thing, count);
