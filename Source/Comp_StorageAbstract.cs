@@ -42,7 +42,7 @@ namespace RT_Storage
 			reservations.Clear();
 		}
 
-		public void Notify_IOAdded(Comp_StorageIOAbstract io)
+		virtual public void Notify_IOAdded(Comp_StorageIOAbstract io)
 		{
 			if (io.GetType().IsAssignableFrom(typeof(Comp_StorageInput)))
 			{
@@ -60,7 +60,7 @@ namespace RT_Storage
 			}
 		}
 
-		public void Notify_IORemoved(Comp_StorageIOAbstract io)
+		virtual public void Notify_IORemoved(Comp_StorageIOAbstract io)
 		{
 			if (io.GetType().IsAssignableFrom(typeof(Comp_StorageInput)))
 			{
@@ -78,13 +78,13 @@ namespace RT_Storage
 			}
 		}
 
-		public void Notify_ReservationRemoved(StorageReservation reservation)
+		virtual public void Notify_ReservationRemoved(StorageReservation reservation)
 		{
 			Utility.Debug($"Removing reservation {reservation}");
 			reservations.Remove(reservation);
 		}
 
-		public bool Reserve(Pawn pawn, Thing thing)
+		virtual public bool Reserve(Pawn pawn, Thing thing)
 		{
 			if (!active)
 			{
@@ -99,7 +99,7 @@ namespace RT_Storage
 			return true;
 		}
 
-		public IEnumerable<StorageReservation> GetStorageReservations()
+		virtual public IEnumerable<StorageReservation> GetStorageReservations()
 		{
 			foreach (var reservation in reservations)
 			{

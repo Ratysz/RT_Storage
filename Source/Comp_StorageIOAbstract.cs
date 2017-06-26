@@ -46,12 +46,12 @@ namespace RT_Storage
 			linkedStorage?.Notify_IORemoved(this);
 		}
 
-		public void Notify_StorageRemoved()
+		virtual public void Notify_StorageRemoved()
 		{
 			linkedStorage = null;
 		}
 
-		public SlotGroup GetSlotGroup()
+		virtual public SlotGroup GetSlotGroup()
 		{
 			if (!active || linkedStorage == null)
 			{
@@ -60,7 +60,7 @@ namespace RT_Storage
 			return linkedStorage.parent.GetSlotGroup();
 		}
 
-		public IEnumerable<Thing> GetStoredThings()
+		virtual public IEnumerable<Thing> GetStoredThings()
 		{
 			if (!active || linkedStorage == null)
 			{

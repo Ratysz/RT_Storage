@@ -13,32 +13,30 @@ namespace RT_Storage
 	[HarmonyPatch]
 	static class Patch_GotoThing_InitAction
 	{
+		static Type type = typeof(Toils_Goto).GetNestedTypes(AccessTools.all)
+			.FirstOrDefault(type =>
+				(type.GetFields(AccessTools.all).FirstOrDefault(field =>
+					field.FieldType == typeof(TargetIndex)) != null)
+				&& type.FullName.Contains(nameof(Toils_Goto.GotoThing)));
+		static FieldInfo[] captureFields = type.GetFields(AccessTools.all);
 		static MethodBase TargetMethod()
 		{
-			return typeof(Toils_Goto)
-				.GetNestedTypes(AccessTools.all)
-				.FirstOrDefault(type => type.FullName.Contains("4F4"))
+			return type
 				.GetMethods(AccessTools.all)
 				.FirstOrDefault(method => method.ReturnType == typeof(void));
 		}
+		static FieldInfo toilField = captureFields
+			.FirstOrDefault(field => field.FieldType == typeof(Toil));
+		static FieldInfo targetIndexField = captureFields
+			.FirstOrDefault(field => field.FieldType == typeof(TargetIndex));
+		static FieldInfo markerField = AccessTools.Field(typeof(Pawn), nameof(Pawn.pather));
+		static MethodInfo markerMethod = AccessTools.Method(typeof(Job), nameof(Job.GetTarget));
+		static MethodInfo sneakyMethod = AccessTools.Method(
+			typeof(Patch_GotoThing_InitAction),
+			nameof(Patch_GotoThing_InitAction.ClosestOutputOrPosition));
 
 		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
 		{
-			FieldInfo markerField = AccessTools.Field(typeof(Pawn), nameof(Pawn.pather));
-			MethodInfo markerMethod = AccessTools.Method(typeof(Job), nameof(Job.GetTarget));
-			MethodInfo sneakyMethod = AccessTools.Method(
-				typeof(Patch_GotoThing_InitAction),
-				nameof(Patch_GotoThing_InitAction.ClosestOutputOrPosition));
-			FieldInfo toilField = typeof(Toils_Goto)
-				 .GetNestedTypes(AccessTools.all)
-				 .FirstOrDefault(type => type.FullName.Contains("4F4"))
-				 .GetFields(AccessTools.all)
-				 .FirstOrDefault(field => field.FieldType == typeof(Toil));
-			FieldInfo targetIndexField = typeof(Toils_Goto)
-				 .GetNestedTypes(AccessTools.all)
-				 .FirstOrDefault(type => type.FullName.Contains("4F4"))
-				 .GetFields(AccessTools.all)
-				 .FirstOrDefault(field => field.FieldType == typeof(TargetIndex));
 			int patchState = 0;
 			foreach (var instr in instructions)
 			{

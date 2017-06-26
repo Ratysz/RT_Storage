@@ -40,7 +40,7 @@ namespace RT_Storage
 			}
 		}
 
-		private class VirtualThing
+		protected class VirtualThing
 		{
 			public ThingDef def;
 			public ThingDef stuff;

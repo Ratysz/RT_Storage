@@ -23,7 +23,7 @@ namespace RT_Storage
 				return (CompProperties_CoordinatedAbstract)props;
 			}
 		}
-		public IEnumerable<IntVec3> specificCells
+		virtual public IEnumerable<IntVec3> specificCells
 		{
 			get
 			{
@@ -40,7 +40,7 @@ namespace RT_Storage
 				}
 			}
 		}
-		public int specificCellsCount
+		virtual public int specificCellsCount
 		{
 			get
 			{
@@ -51,7 +51,7 @@ namespace RT_Storage
 				return parent.OccupiedRect().Cells.ToList().Count;
 			}
 		}
-		public bool active
+		virtual public bool active
 		{
 			get
 			{

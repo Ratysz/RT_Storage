@@ -20,7 +20,7 @@ namespace RT_Storage
 		static MethodBase TargetMethod()
 		{
 			return type.GetMethods(AccessTools.all)
-				.FirstOrDefault(method => method.Name.Contains("C00"));
+				.FirstOrDefault(method => method.GetParameters().Count() == 2);
 		}
 		static FieldInfo bestPrioField = captureFields
 			 .FirstOrDefault(field => field.Name.Contains("bestPrio"));
